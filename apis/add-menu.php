@@ -5,9 +5,8 @@
     $name = $_POST["menu_name"];
     $price = $_POST["price"];
 
-    $query = ("update `menu` set menu_name=?, price=? where menu_name=?");
+    $query = ("insert into `menu` values(?, ?, ?)");
     $stmt = $db->prepare($query);
-    $result = $stmt->execute(array($menu_name, $price, $menu_name));
-    header("Location:inform.php");
-    
+    $result = $stmt->execute(array(NULL, $name, $price));
+
     echo json_encode($result);

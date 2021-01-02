@@ -1,7 +1,7 @@
 <template>
   <v-app>
     <transition name="fade">
-      <router-view/>
+      <router-view></router-view>
     </transition>
   </v-app>
 </template>
@@ -17,12 +17,17 @@ export default {
         `http://192.168.100.161:8022/api/test.php`,
       );
       console.log(res);
-      this.$toast(res.data);
+      this.$toast.warning(
+        res.data, 
+        {
+          timeout: 1200
+        }
+      );
     }
   },
 
   mounted() {
-    this.$toast("SUCCESS!")
+    // this.$toast("SUCCESS!")
     this.apiTest()
   },
 };
