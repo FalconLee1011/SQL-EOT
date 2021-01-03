@@ -6,7 +6,7 @@
     $number = $_POST["order_ID"];
 
     //delete delivery_contact
-    $query = ("delete from `delivery_contact` where delievery_ID in (select delievery_ID from `_order` where order_ID=" . $number . ")");
+    $query = ("delete from `delivery_contact` where delivery_ID in (select delivery_ID from `_order` where order_ID=" . $number . ")");
     $stmt = $db->prepare($query);
     $stmt->execute();
 
