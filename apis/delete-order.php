@@ -2,11 +2,11 @@
     require("./utils.php");
     header("Content-type:text/html;charset=utf-8");
     include_once "db_conn.php";
-
-    $number = $_POST["order_ID"];;
+    
+    $number = $_POST["order_ID"];
 
     //delete delivery_contact
-    $query = ("delete from `delivery_contact` where delievery_ID in (select delievery_ID from `order` where order_ID=".$number.")");
+    $query = ("delete from `delivery_contact` where delievery_ID in (select delievery_ID from `_order` where order_ID=" . $number . ")");
     $stmt = $db->prepare($query);
     $stmt->execute();
 
@@ -16,7 +16,7 @@
     $stmt->execute();
 
     //delete order
-    $query = ("delete from `order` where order_ID=".$number);
+    $query = ("delete from `_order` where order_ID=".$number);
     $stmt = $db->prepare($query);
     $stmt->execute();
    

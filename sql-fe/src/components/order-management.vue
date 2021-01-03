@@ -27,12 +27,70 @@
               <v-btn icon small class="ma-2" @click="triggerItemRemove(item)" color="#f00000"> <v-icon>mdi-trash-can-outline</v-icon> </v-btn>
             </template>
           </v-data-table>
-          <v-card-subtitle>訂單備註</v-card-subtitle>
-          <v-textarea
-            solo
-            v-model="editingItem.remarks"
-            class="mb-0"
-          ></v-textarea>
+          <div v-if="(editingMode == 'edit') && (editingItem.take_type == 'delivery'  || editingItem.take_type == '外送')">
+            <v-card-subtitle>外送訂單詳細資料</v-card-subtitle>
+            <v-row>
+              <v-col>
+                <v-text-field readonly label="買方" v-model="editingItem.order_name" />
+              </v-col>
+              <v-col>
+                <v-text-field readonly label="買方電話" v-model="editingItem.phone_number" />
+              </v-col>
+              <v-col>
+                <v-text-field readonly label="買方地址" v-model="editingItem.order_address" />
+              </v-col>
+            </v-row>
+            <v-textarea
+              v-model="editingItem.remarks"
+              label="備註"
+              class="mb-0"
+              readonly
+            ></v-textarea>
+          </div>
+          <div v-if="(editingMode == 'new')">
+            <v-card-subtitle>訂單詳細資料</v-card-subtitle>
+            <v-row>
+              <v-col>
+                <v-select 
+                  label="訂單類型" 
+                  v-model="editingItem.take_type" 
+                  :items="[ {text: '內用', value: 'for_here'}, {text: '外帶', value: 'take_out'}, {text: '外送', value: 'delivery'} ]"
+                  item-text="text"
+                  item-value="value"
+                />
+              </v-col>
+              <v-col>
+                <v-select 
+                  label="付款方式" 
+                  v-model="editingItem.payment_method" 
+                  :items="[ {text: '現金', value: 'cash'}, {text: '信用卡', value: 'credit_card'} ]"
+                  item-text="text"
+                  item-value="value"
+                />
+              </v-col>
+              <v-col v-if="editingItem.take_type == 'for_here'">
+                <v-text-field label="桌號" v-model="editingItem.table_number"/>
+              </v-col>
+            </v-row>
+            <div v-if="editingItem.take_type == 'delivery'">
+              <v-row>
+                <v-col>
+                  <v-text-field label="買方" v-model="editingItem.order_name" />
+                </v-col>
+                <v-col>
+                  <v-text-field label="買方電話" v-model="editingItem.phone_number" />
+                </v-col>
+                <v-col>
+                  <v-text-field label="買方地址" v-model="editingItem.order_address" />
+                </v-col>
+              </v-row>
+              <v-textarea
+                v-model="editingItem.remarks"
+                label="備註"
+                class="mb-0"
+              ></v-textarea>
+            </div>
+          </div>
         </v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -62,8 +120,9 @@
             <v-col>
               <v-autocomplete 
                 label="品項"
-                v-model="editingItemOfItem.menu_name"
+                v-model="editingItemOfItemName"
                 :items="menu"
+                item-text="menu_name"
               /> 
             </v-col>
             <v-col> <v-text-field v-model="editingItemOfItem.remarks" label="備註"/> </v-col>
@@ -140,47 +199,20 @@ export default {
       itemEditing: false,
       loading: false,
       editingItemOfItem: {}, 
+      editingItemOfItemName: undefined,
       editingItem: {},
       editingIdx: 0,
       editingItemOfItemIdx: 0,
       headers:[
-        {text: "訂單ID", value: "id", align: "center"},
-        {text: "訂單類型", value: "order_type", align: "center"},
+        {text: "訂單ID", value: "order_ID", align: "center"},
+        {text: "訂單類型", value: "take_type", align: "center"},
         {text: "付款方式", value: "payment_method", align: "center"},
         {text: "訂單日期", value: "date", align: "center"},
         {text: "桌號", value: "table_number", align: "center"},
-        {text: "總價", value: "price", align: "center"},
+        {text: "總價", value: "price_ID", align: "center"},
         {text: "操作", value: "act", align: "center"},
       ],
-      orders:[
-        {
-          id: "001",
-          order_type: "內用",
-          payment_method: "現金",
-          date: "2020/10/20",
-          table_number: "1",
-          price: "130",
-          items:[
-            { id: "003", menu_name: "測試牛肉湯3", price: 522, remarks: "testtest" }, 
-            { id: "003", menu_name: "測試牛肉湯2", price: 522, remarks: "testtest" }, 
-            { id: "003", menu_name: "測試牛肉湯1", price: 522, remarks: "testtest" }, 
-          ],
-          remarks: "test test",
-        },
-        {
-          id: "002",
-          order_type: "外帶",
-          payment_method: "刷卡",
-          date: "2020/10/20",
-          table_number: "-",
-          price: "100",
-          items:[
-            { id: "003", menu_name: "測試牛肉湯3", price: 522, remarks: "testtest" }, 
-            { id: "003", menu_name: "測試牛肉湯1", price: 522, remarks: "testtest" }, 
-          ],
-          remarks: "test test",
-        },
-      ],
+      orders:[],
       menu:[],
     }
   },
@@ -188,14 +220,14 @@ export default {
     itemHeaders(){
       if(this.editingMode == 'edit'){ 
         return [
-          {text: "商品ID", value: "id", width: "12%", align: "center"},
+          {text: "商品ID", value: "menu_ID", width: "12%", align: "center"},
           {text: "商品名稱", value: "menu_name", width: "12%", align: "center"},
           {text: "商品價格", value: "price", width: "12%", align: "center"},
           {text: "備註", value: "remarks", width: "44%", align: "center"},
         ];
       }
       return [
-        {text: "商品ID", value: "id", width: "12%", align: "center"},
+        {text: "商品ID", value: "menu_ID", width: "12%", align: "center"},
         {text: "商品名稱", value: "menu_name", width: "12%", align: "center"},
         {text: "商品價格", value: "price", width: "12%", align: "center"},
         {text: "備註", value: "remarks", width: "44%", align: "center"},
@@ -235,26 +267,32 @@ export default {
       console.log(this.editingItemOfItemIdx);
       this.editingItem.items.splice(this.editingItemOfItemIdx, 1);
     },
-    triggerRemove(item){
+    async triggerRemove(item){
+      this.loading = true;
+      await this.doneOrder(item.order_ID);
       this.editingIdx = this.orders.indexOf(item);
       this.orders.splice(this.editingIdx, 1);
       this.$toast.success(`訂單已完成！`);
-      // Object.assign(this.editingItem, item);
-      // this.removing = true;
+      this.loading = false;
     },
     addItem(){
-      console.log(this.editingItemOfItem);
+      console.log(this.editingItemOfItemName);
+      let menuItem = this.menu.find(o => o.menu_name === this.editingItemOfItemName);
+      this.editingItemOfItem.menu_ID = menuItem.menu_ID;
+      this.editingItemOfItem.menu_name = menuItem.menu_name;
+      this.editingItemOfItem.price = menuItem.price;
       let clone = new Object();
       Object.assign(clone, this.editingItemOfItem);
       this.editingItem.items.push(clone);
       this.itemEditing = false;
     },
-    add(){
+    async add(){
       this.loading = true;
       let clone = new Object();
       Object.assign(clone, this.editingItem);
-      this.orders.push(clone);
       // DO AXIOS THINGS
+      await this.newOrder(clone);
+      this.orders.push(clone);
       this.editing = false;
       this.loading = false;
       this.$toast.success(`已成功新增訂單！`);
@@ -279,6 +317,87 @@ export default {
       this.$toast.error(`已成功刪除商品！${this.editingItem.menu_name}`);
       Object.assign(this.editingItem, {});
     },
+    async fetchOrder(){
+      const res = await this.$axios.post(
+        `/api/view-order.php`
+      );
+      console.log(res);
+      res.data.forEach(async (el)=> {
+        let order = el;
+        order.items = await this.fetchOrderDetail(el.order_ID);
+        if(order.take_type == '外送'){
+          let deliveryDetails = await this.fetchDeliveryOrderDetail(el.order_ID);
+          order.order_name = deliveryDetails[0].order_name;
+          order.phone_number = deliveryDetails[0].phone_number;
+          order.order_address = deliveryDetails[0].order_address;
+          order.remarks = deliveryDetails[0].remarks;
+        }
+        console.log(order);
+        this.orders.push(order)
+      });
+    },
+    async fetchOrderDetail(order_ID){
+      let formdata = new FormData();
+      formdata.append("order_ID", order_ID);
+      const res = await this.$axios.post(
+        `/api/get-detail.php`,
+        formdata,
+      );
+      console.log(res);
+      return res.data;
+    },
+    async fetchDeliveryOrderDetail(order_ID){
+      let formdata = new FormData();
+      formdata.append("order_ID", order_ID);
+      const res = await this.$axios.post(
+        `/api/delivery.php`,
+        formdata,
+      );
+      console.log(res);
+      return res.data;
+    },
+    async doneOrder(order_ID){
+      let formdata = new FormData();
+      formdata.append("order_ID", order_ID);
+      const res = await this.$axios.post(
+        `/api/delete-order.php`,
+        formdata,
+      );
+      console.log(res);
+    },
+    async fetchMenu(){
+      const res = await this.$axios.post(
+        `/api/view-menu.php`,
+        {}
+      );
+      this.menu = res.data;
+    },
+    async newOrder(item){
+      console.log("---- new order ----");
+      console.log(item);
+      console.log("-------------------");
+      // let form = new FormData();
+      // for (const key in item) {
+      //   const el = item[key];
+      //   console.log(`${key} -> ${el}`);
+      //   if(key == 'item'){
+      //     form.append("item[]", el);
+      //   }
+      //   else{ form.append(key, el); }
+      // }
+      const date = new Date();
+      item.date = `${date.getFullYear()}-${("0" + date.getMonth() + 1).slice(-2)}-${("0" + date.getDate()).slice(-2)}`;
+      const res = await this.$axios.post(
+        `/api/add-order.php`,
+        item
+      );
+      console.log(res);
+      this.fetchOrder();
+    }
+  },
+  mounted() {
+    this.fetchOrder();
+    this.fetchMenu();
   },
 }
 // - GOTTA SAY THIS CODE IS SOOOO DIRTY, BUT I AM 2 LAZY 2 MAKE IT LEGIT
