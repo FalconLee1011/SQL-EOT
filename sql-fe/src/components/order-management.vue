@@ -284,6 +284,7 @@ export default {
       let clone = new Object();
       Object.assign(clone, this.editingItemOfItem);
       this.editingItem.items.push(clone);
+      this.editingItemOfItemName = undefined;
       this.itemEditing = false;
     },
     async add(){
@@ -292,7 +293,7 @@ export default {
       Object.assign(clone, this.editingItem);
       // DO AXIOS THINGS
       await this.newOrder(clone);
-      this.orders.push(clone);
+      // this.orders.push(clone);
       this.editing = false;
       this.loading = false;
       this.$toast.success(`已成功新增訂單！`);
@@ -318,6 +319,8 @@ export default {
       Object.assign(this.editingItem, {});
     },
     async fetchOrder(){
+      this.orders = [];
+      this.loading = true;
       const res = await this.$axios.post(
         `/api/view-order.php`
       );
@@ -333,8 +336,9 @@ export default {
           order.remarks = deliveryDetails[0].remarks;
         }
         console.log(order);
-        this.orders.push(order)
+        this.orders.push(order);
       });
+      this.loading = false;
     },
     async fetchOrderDetail(order_ID){
       let formdata = new FormData();
